@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Palantir · Q3 2026 — HTML Slides</title>
+<style>
+:root{--ink:#0b0b0b;--accent:#ff4800;--paper:#fdfdfd;--muted:#595959;--panel:#e0e5ef}
+*{box-sizing:border-box}
+body{margin:0;overflow:hidden;background:var(--paper);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+#stage{position:absolute;left:50%;top:50%;width:1600px;height:900px;overflow:hidden;background:var(--paper);transform:translate(-50%,-50%) scale(var(--scale,1));touch-action:pan-y}
+.scene{position:absolute;inset:0;overflow:hidden}
+.part{position:absolute;margin:0;transform-origin:0 50%}
+.eyebrow,.pill,.bar{font-size:28px;font-weight:400;letter-spacing:.085em;text-transform:uppercase}
+.head{font-weight:750;line-height:1.08;letter-spacing:-.045em;white-space:nowrap}
+.copy{font-size:39px;color:var(--muted);line-height:1.25;white-space:nowrap}
+.panel[style*=white] .copy{color:white}
+mark{color:var(--ink);background:var(--accent);display:inline-block;line-height:1.04;padding:0 .065em .025em}
+.pill{border-radius:999px;background:#000;color:white;padding:15px 33px;line-height:1.14;white-space:nowrap}
+.layout-group{display:flex;gap:var(--gap,12px);width:max-content;align-items:flex-start}
+.layout-group > .part{position:relative;left:auto!important;top:auto!important}
+.layout-stack{flex-direction:column}
+.panel{border-radius:5px;background:var(--panel);overflow:hidden}
+.bar{height:56px;background:var(--ink);color:white;display:flex;align-items:center;gap:14px;padding:0 21px;font-size:20px}
+.bar i{width:16px;height:16px;border-radius:50%;background:#fff}
+.bar span{margin-left:20px}
+.panel .inside{position:absolute;inset:0}
+.grid{display:grid;gap:var(--gap,5px);grid-template-columns:repeat(var(--cols),var(--size));grid-auto-rows:var(--size)}
+.cell{background:var(--tone,var(--ink))}
+.grid .empty{background:var(--panel)}
+.grid.enter .cell:not(.empty){animation:cell-in 225ms both;animation-delay:calc(var(--i) * var(--stagger,4ms))}
+.dotfield{background-color:#c4d0e4;background-image:radial-gradient(#f3f7ff 1.5px,transparent 1.8px);background-size:17px 17px}
+.pixel-strip .cell{position:absolute}
+.pixel-strip.enter .cell{animation:cell-in 210ms both;animation-delay:calc(var(--i) * 6ms)}
+.pending{visibility:hidden}
+.enter{animation:pop 290ms cubic-bezier(.18,.8,.3,1) both}
+.enter mark{animation:highlight 285ms 65ms both}
+@keyframes pop{from{opacity:0;transform:translateY(13px) scale(.983)}to{opacity:1;transform:none}}
+@keyframes highlight{from{background-color:transparent}to{background-color:var(--accent)}}
+@keyframes cell-in{from{opacity:0;transform:scale(.35)}to{opacity:1;transform:none}}
+nav{position:fixed;right:12px;bottom:12px;display:flex;align-items:center;gap:5px;padding:5px 7px;background:#191919e8;color:#fff;border-radius:8px;opacity:.32;transition:opacity .15s;font:13px Arial}
+nav:hover,nav:focus-within{opacity:1}
+:fullscreen nav{display:none}
+button{background:transparent;color:inherit;border:0;border-radius:4px;padding:5px 8px;font:inherit;cursor:pointer}
+button:hover,button:focus-visible{background:#444}
+button:disabled{opacity:.35;cursor:default}
+output{min-width:88px;text-align:center;font-variant-numeric:tabular-nums}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main id="stage" aria-label="Palantir presentation"></main>
+<nav aria-label="Presentation controls">
+<button id="prev" aria-label="Previous slide">←</button><output id="position" aria-live="polite"></output><button id="next" aria-label="Next slide">→</button><button id="fullscreen" aria-label="Enter fullscreen" title="Fullscreen (F)">⛶</button>
+</nav>
+<script>
+'use strict';
+
+// The source canvas is 1600 × 900. Each element belongs to a numbered build.
+const slides = [];
+const stage = document.querySelector('#stage');
+const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const highlight = value => escape(value).replace(/\{([^{}]+)\}/g,'<mark>$1</mark>');
+function place(className, x, y, step, content, style = '', tag = 'div') {
+  return `<${tag} class="part ${className}" style="left:${x}px;top:${y}px;${style}" data-build="${step}">${content}</${tag}>`;
+}
+const title = (x,y,size,value,step=1,style='') => place('head',x,y,step,highlight(value),`font-size:${size}px;${style}`);
+const copy = (x,y,value,step=1,size=39) => place('copy',x,y,step,escape(value),`font-size:${size}px`);
+const pill = (x,y,value,step=1) => place('pill',x,y,step,escape(value));
+function group(x,y,direction,gap,...children) {
+  return place('layout-group layout-'+direction,x,y,0,children.join(''),`--gap:${gap}px`);
+}
+const pills = (x,y,direction,gap,...items) =>
+  group(x,y,direction,gap,...items.map(([label,step]) => pill(0,0,label,step)));
+const box = (x,y,w,h,body,step=0,style='') => place('panel',x,y,step,`<div class="inside">${body}</div>`,`width:${w}px;height:${h}px;${style}`);
+const bar = (label,style='') => `<div class="bar" style="${style}"><i></i><i></i><i></i><span>${escape(label)}</span></div>`;
+const orange = 'var(--accent)';
+const gray = 'color:#626060';
+function grid(x,y,cols,total,filled,size,step,tone='var(--ink)', gap=5) {
+  const cells = Array.from({length:total},(_,i) => {
+    const fraction = Math.max(0,Math.min(1,filled-i));
+    const fill = fraction > 0 && fraction < 1
+      ? `background:linear-gradient(90deg,${tone} ${fraction*100}%,var(--panel) ${fraction*100}%)` : '';
+    return `<span class="cell${fraction ? '' : ' empty'}" style="--i:${i};${fill}"></span>`;
+  }).join('');
+  return place('grid',x,y,step,cells,`--cols:${cols};--size:${size}px;--tone:${tone};--gap:${gap}px`);
+}
+function pixelStrip(step, lineInset = 0) {
+  // Decorative step line and columns traced approximately from the screenshots.
+  const runs = [[7,0],[1,1],[4,2],[2,3],[5,4],[7,5],[4,4],[5,3],[2,2],[3,3],[2,4],[18,5],[2,4],[2,3],[2,4],[10,5]];
+  const bars = [0,4,4,0,0,1,0,2,0,0,3,1,0,5,0,0,2,0,0,3,0,0,0,1,0,4,4,0,4,1,0,5,4,0,2,1,0,1,4,0,1,2,0,0,0,0,3,1,0,4,2,0,5,4,0,5,1,0,4,4,0,1,1,0,0,4,0,4,4,0,6,5,0,5,1];
+  const cell = (column,row,tone,offset = 0) => `<span class="cell" style="--i:${column};--tone:${tone};left:${column*(1582/75)}px;top:${row*21+offset}px;width:18px;height:18px"></span>`;
+  let column = 0;
+  const line = runs.map(([length,level]) => Array.from({length},() => cell(column++,5-level,orange,lineInset)).join('')).join('');
+  const columns = bars.map((height,index) => Array.from({length:height},(_,row) => cell(index,12-row,row === height-1 && index%5===1 ? '#666' : '#000')).join('')).join('');
+  return place('pixel-strip',0,630,step,line+columns,'width:1600px;height:270px');
+}
+const dots = () => place('dotfield',3,0,0,'','width:1597px;height:636px;border-radius:18px 18px 0 0');
+function slide(label,...parts) {
+  slides.push(`<section class="scene" aria-label="${escape(label)}" hidden>${place('eyebrow',70,53,0,escape(label))}${parts.join('')}</section>`);
+}
+
+slide('Palantir · Q3 2026 earnings call',
+  pills(80,148,'row',12,['Tech',1],['Society',2],['General trends',3]),
+  title(80,324,100,'The most',4),group(80,446,'stack',16,title(0,0,145,'{watched}',5),title(0,0,43,'earnings call in the world',6)));
+slide('Why people watch this call',pills(80,147,'row',12,['AI',1],['Sovereign AI',2]),
+  title(80,271,100,'Changing the',3),title(80,399,148,'{universe}',4),copy(80,698,'“in our case, for tremendous good”',5));
+slide('What people come here to figure out',
+  title(78,167,98,'Politically',1),title(78,285,98,'Sociologically',2),title(78,403,98,'Anthropologically',3),
+  title(78,521,98,'{Financially}',4),copy(1014,698,'AI and sovereign AI are',2),copy(1014,750,'“showing up in our numbers”',3));
+slide('Who is watching',title(78,225,99,'Investors watching',1),title(78,341,99,'for their own {investments}',2),
+  grid(78,510,12,12,12,55,3,'var(--ink)',10),pill(78,733,'Not even primarily Palantir',4));
+slide('The question we used to get',
+  box(60,199,1480,410,bar('The old question')+title(67,100,96,'“Could you talk a little',1)+title(67,215,96,'more about {commercial}?”',2)),
+  pill(60,712,'The past couple of years',3),pill(690,712,'This quarter',4));
+slide('Q3 2026 · US revenue · one cell = $10M',
+  title(70,116,68,'Commercial',1),title(70,193,68,'eclipsed government',2),
+  grid(70,296,10,100,95.3,28,3),copy(70,625,'Government $953M',3),
+  grid(517,296,10,100,98.4,28,4,orange),copy(517,625,'Commercial $984M',4),
+  title(70,730,133,'96%',5),copy(374,803,'revenue growth, year on year',5));
+slide('Unique products · unique go-to-market',
+  title(65,182,146,'The {sovereign}',1),title(65,355,146,'revolution',2),
+  pills(60,643,'stack',10,['Value out of tokens',3],['Keep your own alpha',4],['Then expand it',5]));
+slide('Out-of-bounds results',
+  title(66,253,100,'The future',1),title(66,372,100,'is becoming',2),title(66,491,148,'the {present}',3),
+  copy(66,735,'“and the present is now”',4));
+slide('Where the value in AI is going',
+  title(60,153,68,'All the value is moving',1),title(60,249,102,'to very few',2),
+  grid(60,387,25,100,100,46,3,'var(--ink)',7),pills(60,780,'row',12,['Palantir',4],['Anthropic',5],['OpenAI',6]));
+slide('US commercial · Q3 2026',
+  title(80,134,47,'A nice-to-have, now {dominant}',1),
+  title(80,209,204,'+29%',2),copy(80,400,'quarter on quarter',2),
+  title(80,489,204,'+148%',3),copy(80,680,'year on year',3),pill(80,765,'All US revenue +119% YoY',4));
+slide('How we attack the market',
+  title(68,254,146,'Very few',1),title(68,445,205,'{salespeople}',2),
+  copy(68,734,'“an impossible way to understand how we’re capturing this juggernaut”',3,37));
+slide('The somewhat crazy aspiration',title(60,132,69,'Take the whole market',1),
+  grid(60,269,10,100,100,35,2,orange,6),pills(524,325,'stack',17,['Financial reason',3],['Mission reason',4]),
+  pills(524,530,'stack',17,['Your alpha',5],['Your sovereignty',6],['The warfighter',7]));
+slide('Why Palantir wants to dominate',
+  group(60,175,'stack',14,title(0,0,143,'A {moral imperative}',1),title(0,0,46,'to be the dominant player in our industry',2)),
+  pills(60,603,'stack',10,['All AI applications',3],['Open and closed models',4],['Training open-weight models',5]));
+slide('Rule of 40 · Q3 2026',title(45,139,374,'158',2),copy(45,546,'96% growth + 62% adj. op. margin',1),
+  title(45,683,47,'“Almost like {jaw dropping}”',3));
+slide('The future is the present',pill(65,170,'Fail in five years',1),title(65,285,214,'Execute',2),title(65,531,234,'{now}',3));
+
+slide('How it used to work',title(70,143,103,'The {long} walk-up',1),
+  pill(70,367,'Talk to us',2),pill(334,447,'A pilot',3),pill(598,527,'A long pilot',4),
+  pill(862,607,'Lock it in',5),pill(1126,687,'Hire salespeople',6));
+slide('What customers say now',
+  box(68,144,916,385,bar('The customer, today')+title(52,99,67,'My IP is in danger',1)+title(52,171,46,'and I’m getting no value',2)+pill(52,299,'Sovereignty',3)),
+  title(68,640,66,'From anger to {action}',4));
+slide('On the front line in commercial',
+  pills(78,159,'row',12,['Quicker interaction',1],['Quicker deployment',2],['Shorter contracts',3]),
+  pill(1183,494,'Hooked',4),title(78,330,100,'Then {expand} dramatically',5),pixelStrip(5));
+slide('At every conference',title(64,265,99,'Warm leads',1,gray),title(64,399,143,'→ {hot} leads',2));
+slide('First deals, then vs now · one cell = $250K',
+  title(58,112,68,'We can deliver in weeks',1),title(58,273,149,'$250K',2),grid(58,466,1,1,1,28,2),
+  title(741,273,149,'$25M',3),grid(741,466,25,100,100,25,3,orange,5),
+  title(58,714,69,'100× bigger, “to start”',4));
+slide('The other approaches',
+  box(39,129,918,420,bar('Not working')+copy(52,84,'— Fake deployments',1)+copy(52,154,'— Raw token usage',2)+copy(52,224,'— Software companies reselling tokens',3)+title(52,327,47,'…and it counts as {revenue}',4)),
+  pill(39,658,'People are just tired of it',5));
+slide('Department of War · US commercial',
+  dots(),place('eyebrow',82,86,0,'DEPARTMENT OF WAR · US COMMERCIAL'),
+  group(82,197,'stack',14,title(0,0,147,'The {taste}',1),title(0,0,67,'of the market is shifting',2)),
+  pill(82,503,'People grow to like what works',3),pixelStrip(3,14));
+slide('The labs and Palantir',
+  box(76,151,687,475,place('eyebrow',43,43,0,'Anthropic and the labs')+title(43,146,67,'Grow the',1)+title(43,231,106,'market',1)),
+  box(836,151,687,475,place('eyebrow',43,43,0,'Palantir')+group(43,129,'stack',16,title(0,0,102,'{Service}',2),copy(0,0,'the market that’s gotten real',2,38)),2,'background:#0b0b0b;color:white'),
+  pill(637,686,'Symbiotic',3));
+slide('Retention',title(78,260,104,'Once you go',1),title(78,381,104,'Palantir,',2),title(78,502,104,'you don’t go {back}',3),copy(78,737,'“you can see it in our numbers”',4));
+slide('Two ways to look at our numbers',
+  box(56,151,703,408,bar('Reading one','background:#686565')+title(45,112,67,'We’re just',1,gray)+title(45,196,102,'sublime',1,gray)),
+  box(830,151,703,408,bar('Reading two')+title(45,112,67,'The market is',2)+title(45,196,102,'{exploding}',3)),
+  pill(830,629,'Karp: “much more in the latter camp”',4));
+slide('Wall Street vs industry',
+  title(79,251,102,'When it',1),title(79,370,102,'gets real,',2),title(79,495,144,'you need {us}',3),
+  pill(79,735,'A market larger than we can service',4));
+slide('Why Palantir was built',
+  pill(66,178,'Protect civil liberties',1),title(604,178,62,'+',2),pill(689,178,'Stop terrorism',2),
+  copy(66,337,'“you don’t want to do one or the other”',3),
+  title(66,513,71,'A product for',4),title(66,600,147,'{social cohesion}',5));
+slide('Deterrence',title(64,253,102,'Built to',1),title(64,381,145,'{avoid} war',2),
+  copy(64,586,'The adversary knows the pain is not worth it',3),pill(64,704,'Bring troops home healthier, safer',4));
+slide('Competitors · adversaries · enemies',title(78,228,69,'The way to stop a war:',1),
+  title(78,352,144,'they know it',2),title(78,548,218,'{works}',3));
+slide('The AI race',pill(78,181,'China: “super high-IQ, scaled culture”',1),
+  title(78,317,148,'It is {us}',2),title(78,490,148,'or them',3));
+slide('To close',dots(),place('eyebrow',82,87,0,'To close'),
+  title(82,239,103,'To the early',1),title(82,365,146,'{retail} investors',2),
+  pill(82,552,'Many recently reinvested',3),pixelStrip(3,14));
+
+// Build state is independent of layout. Advancing one step can reveal multiple elements.
+stage.innerHTML = slides.join('');
+const scenes = Array.from(stage.children);
+const builds = scenes.map(scene => Array.from(scene.querySelectorAll('[data-build]')));
+const lastBuild = builds.map(parts => Math.max(...parts.map(part => Number(part.dataset.build))));
+const position = document.querySelector('#position');
+const previous = document.querySelector('#prev');
+const next = document.querySelector('#next');
+const fullscreen = document.querySelector('#fullscreen');
+let page = 0;
+let build = 0;
+let revealTimer;
+const firstRevealDelay = 360;
+const revealInterval = 760;
+
+function render(animate = false) {
+  scenes.forEach((scene,index) => { scene.hidden = index !== page; });
+  for (const part of builds[page]) {
+    const step = Number(part.dataset.build);
+    part.classList.toggle('pending', step > build);
+    part.classList.toggle('enter', animate && step === build && build > 0);
+    part.setAttribute('aria-hidden', String(step > build));
+  }
+  position.value = `${page+1}/${scenes.length} · ${build}/${lastBuild[page]}`;
+  previous.disabled = page === 0;
+  next.disabled = page === scenes.length-1;
+  history.replaceState(null,'',`#${page+1}.${build}`);
+}
+function scheduleReveal(delay) {
+  if (build >= lastBuild[page]) return;
+  revealTimer = window.setTimeout(() => {
+    build++;
+    render(true);
+    scheduleReveal(revealInterval);
+  }, delay);
+}
+function showSlide(target, initialBuild = 0) {
+  window.clearTimeout(revealTimer);
+  page = target;
+  build = initialBuild;
+  render();
+  scheduleReveal(firstRevealDelay);
+}
+function move(direction) {
+  const target = page+direction;
+  if (target >= 0 && target < scenes.length) showSlide(target);
+}
+function loadPosition() {
+  const match = /^#(\d+)(?:\.(\d+))?$/.exec(location.hash);
+  const target = match ? Math.max(0, Math.min(scenes.length-1, Number(match[1])-1)) : 0;
+  const initialBuild = match ? Math.min(lastBuild[target], Number(match[2] || 0)) : 0;
+  showSlide(target, initialBuild);
+}
+function fit() {
+  stage.style.setProperty('--scale', Math.min(innerWidth/1600,innerHeight/900));
+}
+async function enterFullscreen() {
+  if (document.fullscreenElement) return;
+  try {
+    await document.documentElement.requestFullscreen();
+  } catch (error) {
+    console.warn('Fullscreen is unavailable in this browser view.', error);
+  }
+}
+previous.addEventListener('click',() => move(-1));
+next.addEventListener('click',() => move(1));
+fullscreen.addEventListener('click',enterFullscreen);
+stage.addEventListener('click',() => move(1));
+window.addEventListener('resize',fit);
+window.addEventListener('hashchange',loadPosition);
+window.addEventListener('keydown',event => {
+  if (event.altKey || event.ctrlKey || event.metaKey) return;
+  if (event.key === ' ' && event.target instanceof HTMLButtonElement) return;
+  switch (event.key) {
+    case 'ArrowRight': case 'ArrowDown': case ' ': move(1); break;
+    case 'ArrowLeft': case 'ArrowUp': move(-1); break;
+    case 'PageDown': move(1); break;
+    case 'PageUp': move(-1); break;
+    case 'Home': showSlide(0); break;
+    case 'End': showSlide(scenes.length-1); break;
+    case 'f': case 'F': enterFullscreen(); break;
+    default: return;
+  }
+  event.preventDefault();
+});
+fit();
+loadPosition();
+</script>
+</body>
+</html>
