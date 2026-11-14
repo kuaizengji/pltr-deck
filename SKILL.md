@@ -1,0 +1,14 @@
+---
+name: palantir-html-slides
+description: Create or revise standalone animated HTML presentations in the Palantir-inspired style. Use for Palantir 风格幻灯片, animated HTML decks, or requests to turn speaking notes into progressively revealed slides with manual page turns.
+---
+
+# Palantir HTML slides
+
+1. Turn the supplied brief, notes, or script into one takeaway per slide. Keep the speaker's sequence, preserve source figures and quotes, and place a reveal at each meaningful beat.
+2. Copy [assets/deck.html](assets/deck.html) to the output HTML. Set the document title and language. Replace the one insertion marker with slide definitions using the existing helpers. Read [references/layout.md](references/layout.md) for their signatures and layout patterns.
+3. Keep the default paper background, near-black type, red-orange highlights, and cool gray-blue panels. Use oversized, left-aligned type, generous negative space, and brief black capsules only where they carry information. Use flat pixel cells for meaningful quantitative comparisons or clearly decorative motifs. Keep the presentation standalone and usable offline.
+4. Check every slide at its final state and sample intermediate reveals. Verify that content stays inside the canvas and panels, capsule groups have equal gaps, highlights clear the text below, and pixel graphics stay inside their intended region. Verify that reveals finish on the current page, page turns work during playback, returning restarts reveals, and full-screen mode hides all deck controls. Use a real browser when available.
+5. Deliver the standalone HTML. Explain the keyboard controls briefly. If relevant, distinguish the browser's full-screen notifications from the deck's controls.
+
+Keep the template's 1600 × 900 canvas, matching surrounding background, and reduced-motion support. Preserve automatic reveals and manual navigation. Press F to enter full-screen and use the browser's Esc behavior to leave it.
