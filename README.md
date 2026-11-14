@@ -2,6 +2,12 @@
 
 Palantir-inspired animated HTML slides. By default, each slide reveals its content automatically and waits for a manual page turn. The deck is a single HTML file that runs offline.
 
+## Original reference deck
+
+[![Six fullscreen-style previews from the original reference deck](examples/palantir-preview.webp)](examples/palantir-original.html)
+
+[Download the original 31-slide HTML deck](https://raw.githubusercontent.com/kuaizengji/pltr-deck/main/examples/palantir-original.html) and open it in a browser. This deck is a visual reference. New decks start from [the reusable template](assets/deck.html).
+
 ## Try it
 
 Download [the two-slide example](examples/onboarding.html) and open it in a browser. Click, press Space, or use the arrow keys to navigate. Press **F** for fullscreen and **Esc** to exit.
