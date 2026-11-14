@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en" data-reveal="manual">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Customer onboarding</title>
+<style>
+/* Deck palette. Override the four roles here. */
+:root{
+  --paper:#fdfdfd;
+  --ink:#202244;
+  --accent:#a5b0ff;
+  --surface:#e5e8fa;
+  --muted:color-mix(in srgb,var(--ink) 68%,var(--paper));
+  --dot-surface:color-mix(in srgb,var(--surface) 87%,var(--ink));
+  --dot:color-mix(in srgb,var(--paper) 84%,var(--surface));
+}
+*{box-sizing:border-box}
+body{margin:0;overflow:hidden;background:var(--paper);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+#stage{position:absolute;left:50%;top:50%;width:1600px;height:900px;overflow:hidden;background:var(--paper);transform:translate(-50%,-50%) scale(var(--scale,1));touch-action:pan-y}
+.scene{position:absolute;inset:0;overflow:hidden}
+.part{position:absolute;margin:0;transform-origin:0 50%}
+.eyebrow,.pill,.bar{font-size:28px;font-weight:400;letter-spacing:.085em;text-transform:uppercase}
+.head{font-weight:750;line-height:1.08;letter-spacing:-.045em;white-space:nowrap}
+.copy{font-size:39px;color:var(--muted);line-height:1.25;white-space:nowrap}
+mark{color:var(--ink);background:var(--accent);display:inline-block;line-height:1.04;padding:0 .065em .025em}
+.pill{border-radius:999px;background:var(--ink);color:var(--paper);padding:15px 33px;line-height:1.14;white-space:nowrap}
+.layout-group{display:flex;gap:var(--gap,12px);width:max-content;align-items:flex-start}
+.layout-group > .part{position:relative;left:auto!important;top:auto!important}
+.layout-stack{flex-direction:column}
+.panel{border-radius:5px;background:var(--surface);overflow:hidden}
+.bar{height:56px;background:var(--ink);color:var(--paper);display:flex;align-items:center;gap:14px;padding:0 21px;font-size:20px}
+.bar i{width:16px;height:16px;border-radius:50%;background:var(--paper)}
+.bar span{margin-left:20px}
+.panel .inside{position:absolute;inset:0}
+.grid{display:grid;gap:var(--gap,5px);grid-template-columns:repeat(var(--cols),var(--size));grid-auto-rows:var(--size)}
+.cell{background:var(--tone,var(--ink))}
+.grid .empty{background:var(--surface)}
+.grid.enter .cell:not(.empty){animation:cell-in 225ms both;animation-delay:calc(var(--i) * var(--stagger,4ms))}
+.dotfield{background-color:var(--dot-surface);background-image:radial-gradient(var(--dot) 1.5px,transparent 1.8px);background-size:17px 17px}
+.pixel-strip .cell{position:absolute}
+.pixel-strip.enter .cell{animation:cell-in 210ms both;animation-delay:calc(var(--i) * 6ms)}
+.deck-logo{position:absolute;z-index:1;top:48px;right:72px;max-width:160px;max-height:56px;object-fit:contain;pointer-events:none}
+.deck-logo.bottom-right{top:auto;bottom:48px}
+.pending{visibility:hidden}
+.enter{animation:pop 290ms cubic-bezier(.18,.8,.3,1) both}
+.enter mark{animation:highlight 285ms 65ms both}
+@keyframes pop{from{opacity:0;transform:translateY(13px) scale(.983)}to{opacity:1;transform:none}}
+@keyframes highlight{from{background-color:transparent}to{background-color:var(--accent)}}
+@keyframes cell-in{from{opacity:0;transform:scale(.35)}to{opacity:1;transform:none}}
+nav{position:fixed;right:12px;bottom:12px;display:flex;align-items:center;gap:5px;padding:5px 7px;background:#191919e8;color:#fff;border-radius:8px;opacity:.32;transition:opacity .15s;font:13px Arial}
+nav:hover,nav:focus-within{opacity:1}
+:fullscreen nav{display:none}
+button{background:transparent;color:inherit;border:0;border-radius:4px;padding:5px 8px;font:inherit;cursor:pointer}
+button:hover,button:focus-visible{background:#444}
+button:disabled{opacity:.35;cursor:default}
+output{min-width:88px;text-align:center;font-variant-numeric:tabular-nums}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main id="stage" aria-label="Presentation"></main>
+<template id="deck-brand">
+  <img class="deck-logo" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22148%22%20height%3D%2242%22%20viewBox%3D%220%200%20148%2042%22%3E%3Crect%20width%3D%2242%22%20height%3D%2242%22%20rx%3D%227%22%20fill%3D%22%2325318a%22%2F%3E%3Cpath%20d%3D%22M11%2029%2021%2011l10%2018%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%223%22%2F%3E%3Ctext%20x%3D%2251%22%20y%3D%2229%22%20font-family%3D%22Arial%2Csans-serif%22%20font-size%3D%2224%22%20font-weight%3D%22700%22%20fill%3D%22%23202244%22%3EStudio%3C%2Ftext%3E%3C%2Fsvg%3E" alt="Studio">
+</template>
+<nav aria-label="Presentation controls">
+<button id="prev" aria-label="Previous">←</button><output id="position" aria-live="polite"></output><button id="next" aria-label="Next">→</button><button id="fullscreen" aria-label="Enter fullscreen" title="Fullscreen (F)">⛶</button>
+</nav>
+<script>
+'use strict';
+
+// The source canvas is 1600 × 900. Each element belongs to a numbered build.
+const slides = [];
+const stage = document.querySelector('#stage');
+const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const highlight = value => escape(value).replace(/\{([^{}]+)\}/g,'<mark>$1</mark>');
+function place(className, x, y, step, content, style = '', tag = 'div') {
+  return `<${tag} class="part ${className}" style="left:${x}px;top:${y}px;${style}" data-build="${step}">${content}</${tag}>`;
+}
+const title = (x,y,size,value,step=1,style='') => place('head',x,y,step,highlight(value),`font-size:${size}px;${style}`);
+const copy = (x,y,value,step=1,size=39) => place('copy',x,y,step,escape(value),`font-size:${size}px`);
+const pill = (x,y,value,step=1) => place('pill',x,y,step,escape(value));
+function group(x,y,direction,gap,...children) {
+  return place('layout-group layout-'+direction,x,y,0,children.join(''),`--gap:${gap}px`);
+}
+const pills = (x,y,direction,gap,...items) =>
+  group(x,y,direction,gap,...items.map(([label,step]) => pill(0,0,label,step)));
+const box = (x,y,w,h,body,step=0,style='') => place('panel',x,y,step,`<div class="inside">${body}</div>`,`width:${w}px;height:${h}px;${style}`);
+const bar = (label,style='') => `<div class="bar" style="${style}"><i></i><i></i><i></i><span>${escape(label)}</span></div>`;
+const orange = 'var(--accent)';
+const gray = 'color:var(--muted)';
+function grid(x,y,cols,total,filled,size,step,tone='var(--ink)', gap=5) {
+  const cells = Array.from({length:total},(_,i) => {
+    const fraction = Math.max(0,Math.min(1,filled-i));
+    const fill = fraction > 0 && fraction < 1
+      ? `background:linear-gradient(90deg,${tone} ${fraction*100}%,var(--surface) ${fraction*100}%)` : '';
+    return `<span class="cell${fraction ? '' : ' empty'}" style="--i:${i};${fill}"></span>`;
+  }).join('');
+  return place('grid',x,y,step,cells,`--cols:${cols};--size:${size}px;--tone:${tone};--gap:${gap}px`);
+}
+function pixelStrip(step, lineInset = 0) {
+  // Decorative step line and columns traced approximately from the screenshots.
+  const runs = [[7,0],[1,1],[4,2],[2,3],[5,4],[7,5],[4,4],[5,3],[2,2],[3,3],[2,4],[18,5],[2,4],[2,3],[2,4],[10,5]];
+  const bars = [0,4,4,0,0,1,0,2,0,0,3,1,0,5,0,0,2,0,0,3,0,0,0,1,0,4,4,0,4,1,0,5,4,0,2,1,0,1,4,0,1,2,0,0,0,0,3,1,0,4,2,0,5,4,0,5,1,0,4,4,0,1,1,0,0,4,0,4,4,0,6,5,0,5,1];
+  const cell = (column,row,tone,offset = 0) => `<span class="cell" style="--i:${column};--tone:${tone};left:${column*(1582/75)}px;top:${row*21+offset}px;width:18px;height:18px"></span>`;
+  let column = 0;
+  const line = runs.map(([length,level]) => Array.from({length},() => cell(column++,5-level,orange,lineInset)).join('')).join('');
+  const columns = bars.map((height,index) => Array.from({length:height},(_,row) => cell(index,12-row,row === height-1 && index%5===1 ? 'var(--muted)' : 'var(--ink)')).join('')).join('');
+  return place('pixel-strip',0,630,step,line+columns,'width:1600px;height:270px');
+}
+const dots = () => place('dotfield',3,0,0,'','width:1597px;height:636px;border-radius:18px 18px 0 0');
+function slide(label,...parts) {
+  slides.push(`<section class="scene" aria-label="${escape(label)}" hidden>${place('eyebrow',70,53,0,escape(label))}${parts.join('')}</section>`);
+}
+
+slide('Customer onboarding',
+  pills(76,147,'row',12,['Today',1],['Next release',2]),
+  group(76,320,'stack',16,
+    title(0,0,120,'From signup to {value}',3),
+    copy(0,0,'Show users their first result in one session.',4)));
+
+slide('Pilot results',
+  title(76,175,105,'{8 of 10} teams activated',1),
+  grid(76,350,10,10,8,60,2,orange,8),
+  copy(76,470,'One cell represents one pilot team.',2));
+
+if (!slides.length) {
+  slide('Presentation', title(70,260,100,'Your {story} here',1));
+}
+
+// Build state is independent of layout. Advancing one step can reveal multiple elements.
+stage.innerHTML = slides.join('');
+const scenes = Array.from(stage.children);
+stage.append(document.querySelector('#deck-brand').content.cloneNode(true));
+const manualReveal = document.documentElement.dataset.reveal === 'manual';
+const builds = scenes.map(scene => Array.from(scene.querySelectorAll('[data-build]')));
+const lastBuild = builds.map(parts => Math.max(...parts.map(part => Number(part.dataset.build))));
+const position = document.querySelector('#position');
+const previous = document.querySelector('#prev');
+const next = document.querySelector('#next');
+const fullscreen = document.querySelector('#fullscreen');
+let page = 0;
+let build = 0;
+let revealTimer;
+const firstRevealDelay = 360;
+const revealInterval = 760;
+
+function render(animate = false) {
+  scenes.forEach((scene,index) => { scene.hidden = index !== page; });
+  for (const part of builds[page]) {
+    const step = Number(part.dataset.build);
+    part.classList.toggle('pending', step > build);
+    part.classList.toggle('enter', animate && step === build && build > 0);
+    part.setAttribute('aria-hidden', String(step > build));
+  }
+  position.value = `${page+1}/${scenes.length} · ${build}/${lastBuild[page]}`;
+  previous.disabled = page === 0 && (!manualReveal || build === 0);
+  next.disabled = page === scenes.length-1 && (!manualReveal || build === lastBuild[page]);
+  history.replaceState(null,'',`#${page+1}.${build}`);
+}
+function scheduleReveal(delay) {
+  if (build >= lastBuild[page]) return;
+  revealTimer = window.setTimeout(() => {
+    build++;
+    render(true);
+    scheduleReveal(revealInterval);
+  }, delay);
+}
+function showSlide(target, initialBuild = 0) {
+  window.clearTimeout(revealTimer);
+  page = target;
+  build = initialBuild;
+  render();
+  if (!manualReveal) scheduleReveal(firstRevealDelay);
+}
+function move(direction, pageOnly = false) {
+  if (manualReveal && !pageOnly) {
+    const targetBuild = build+direction;
+    if (targetBuild >= 0 && targetBuild <= lastBuild[page]) {
+      build = targetBuild;
+      render(direction > 0);
+      return;
+    }
+  }
+  const target = page+direction;
+  if (target < 0 || target >= scenes.length) return;
+  const initialBuild = manualReveal && !pageOnly && direction < 0 ? lastBuild[target] : 0;
+  showSlide(target, initialBuild);
+}
+function loadPosition() {
+  const match = /^#(\d+)(?:\.(\d+))?$/.exec(location.hash);
+  const target = match ? Math.max(0, Math.min(scenes.length-1, Number(match[1])-1)) : 0;
+  const initialBuild = match ? Math.min(lastBuild[target], Number(match[2] || 0)) : 0;
+  showSlide(target, initialBuild);
+}
+function fit() {
+  stage.style.setProperty('--scale', Math.min(innerWidth/1600,innerHeight/900));
+}
+async function enterFullscreen() {
+  if (document.fullscreenElement) return;
+  try {
+    await document.documentElement.requestFullscreen();
+  } catch (error) {
+    console.warn('Fullscreen is unavailable in this browser view.', error);
+  }
+}
+previous.addEventListener('click',() => move(-1));
+next.addEventListener('click',() => move(1));
+fullscreen.addEventListener('click',enterFullscreen);
+stage.addEventListener('click',() => move(1));
+window.addEventListener('resize',fit);
+window.addEventListener('hashchange',loadPosition);
+window.addEventListener('keydown',event => {
+  if (event.altKey || event.ctrlKey || event.metaKey) return;
+  if (event.key === ' ' && event.target instanceof HTMLButtonElement) return;
+  switch (event.key) {
+    case 'ArrowRight': case 'ArrowDown': case ' ': move(1); break;
+    case 'ArrowLeft': case 'ArrowUp': move(-1); break;
+    case 'PageDown': move(1,true); break;
+    case 'PageUp': move(-1,true); break;
+    case 'Home': showSlide(0); break;
+    case 'End': showSlide(scenes.length-1); break;
+    case 'f': case 'F': enterFullscreen(); break;
+    default: return;
+  }
+  event.preventDefault();
+});
+fit();
+loadPosition();
+</script>
+</body>
+</html>
