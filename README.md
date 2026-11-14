@@ -1,6 +1,8 @@
-# pltr-deck
+<h1><img src="assets/wordmark.svg" alt="pltr-deck" width="360"></h1>
 
 Palantir-inspired animated HTML slides. By default, each slide reveals its content automatically and waits for a manual page turn. The deck is a single HTML file that runs offline.
+
+An independent open-source project inspired by Palantir’s presentation style. Not affiliated with or endorsed by Palantir Technologies.
 
 ## Original reference deck
 
@@ -33,4 +35,4 @@ To add a brand, put an `<img class="deck-logo" ...>` inside `<template id="deck-
 
 See a [custom palette, logo, and manual-reveal example](examples/branded-manual.html).
 
-MIT licensed. An independent project inspired by the presentation style.
+MIT licensed.
