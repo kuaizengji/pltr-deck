@@ -1,11 +1,20 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-reveal="auto">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Customer onboarding</title>
 <style>
-:root{--ink:#0b0b0b;--accent:#ff4800;--paper:#fdfdfd;--muted:#595959;--panel:#e0e5ef}
+/* Deck palette. Override the four roles here. */
+:root{
+  --paper:#fdfdfd;
+  --ink:#0b0b0b;
+  --accent:#ff4800;
+  --surface:#e0e5ef;
+  --muted:color-mix(in srgb,var(--ink) 68%,var(--paper));
+  --dot-surface:color-mix(in srgb,var(--surface) 87%,var(--ink));
+  --dot:color-mix(in srgb,var(--paper) 84%,var(--surface));
+}
 *{box-sizing:border-box}
 body{margin:0;overflow:hidden;background:var(--paper);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
 #stage{position:absolute;left:50%;top:50%;width:1600px;height:900px;overflow:hidden;background:var(--paper);transform:translate(-50%,-50%) scale(var(--scale,1));touch-action:pan-y}
@@ -14,24 +23,25 @@ body{margin:0;overflow:hidden;background:var(--paper);color:var(--ink);font-fami
 .eyebrow,.pill,.bar{font-size:28px;font-weight:400;letter-spacing:.085em;text-transform:uppercase}
 .head{font-weight:750;line-height:1.08;letter-spacing:-.045em;white-space:nowrap}
 .copy{font-size:39px;color:var(--muted);line-height:1.25;white-space:nowrap}
-.panel[style*=white] .copy{color:white}
 mark{color:var(--ink);background:var(--accent);display:inline-block;line-height:1.04;padding:0 .065em .025em}
-.pill{border-radius:999px;background:#000;color:white;padding:15px 33px;line-height:1.14;white-space:nowrap}
+.pill{border-radius:999px;background:var(--ink);color:var(--paper);padding:15px 33px;line-height:1.14;white-space:nowrap}
 .layout-group{display:flex;gap:var(--gap,12px);width:max-content;align-items:flex-start}
 .layout-group > .part{position:relative;left:auto!important;top:auto!important}
 .layout-stack{flex-direction:column}
-.panel{border-radius:5px;background:var(--panel);overflow:hidden}
-.bar{height:56px;background:var(--ink);color:white;display:flex;align-items:center;gap:14px;padding:0 21px;font-size:20px}
-.bar i{width:16px;height:16px;border-radius:50%;background:#fff}
+.panel{border-radius:5px;background:var(--surface);overflow:hidden}
+.bar{height:56px;background:var(--ink);color:var(--paper);display:flex;align-items:center;gap:14px;padding:0 21px;font-size:20px}
+.bar i{width:16px;height:16px;border-radius:50%;background:var(--paper)}
 .bar span{margin-left:20px}
 .panel .inside{position:absolute;inset:0}
 .grid{display:grid;gap:var(--gap,5px);grid-template-columns:repeat(var(--cols),var(--size));grid-auto-rows:var(--size)}
 .cell{background:var(--tone,var(--ink))}
-.grid .empty{background:var(--panel)}
+.grid .empty{background:var(--surface)}
 .grid.enter .cell:not(.empty){animation:cell-in 225ms both;animation-delay:calc(var(--i) * var(--stagger,4ms))}
-.dotfield{background-color:#c4d0e4;background-image:radial-gradient(#f3f7ff 1.5px,transparent 1.8px);background-size:17px 17px}
+.dotfield{background-color:var(--dot-surface);background-image:radial-gradient(var(--dot) 1.5px,transparent 1.8px);background-size:17px 17px}
 .pixel-strip .cell{position:absolute}
 .pixel-strip.enter .cell{animation:cell-in 210ms both;animation-delay:calc(var(--i) * 6ms)}
+.deck-logo{position:absolute;z-index:1;top:48px;right:72px;max-width:160px;max-height:56px;object-fit:contain;pointer-events:none}
+.deck-logo.bottom-right{top:auto;bottom:48px}
 .pending{visibility:hidden}
 .enter{animation:pop 290ms cubic-bezier(.18,.8,.3,1) both}
 .enter mark{animation:highlight 285ms 65ms both}
@@ -50,8 +60,11 @@ output{min-width:88px;text-align:center;font-variant-numeric:tabular-nums}
 </head>
 <body>
 <main id="stage" aria-label="Presentation"></main>
+<template id="deck-brand">
+  <!-- Optional: <img class="deck-logo" src="data:image/png;base64,..." alt="Brand name"> -->
+</template>
 <nav aria-label="Presentation controls">
-<button id="prev" aria-label="Previous slide">←</button><output id="position" aria-live="polite"></output><button id="next" aria-label="Next slide">→</button><button id="fullscreen" aria-label="Enter fullscreen" title="Fullscreen (F)">⛶</button>
+<button id="prev" aria-label="Previous">←</button><output id="position" aria-live="polite"></output><button id="next" aria-label="Next">→</button><button id="fullscreen" aria-label="Enter fullscreen" title="Fullscreen (F)">⛶</button>
 </nav>
 <script>
 'use strict';
@@ -75,12 +88,12 @@ const pills = (x,y,direction,gap,...items) =>
 const box = (x,y,w,h,body,step=0,style='') => place('panel',x,y,step,`<div class="inside">${body}</div>`,`width:${w}px;height:${h}px;${style}`);
 const bar = (label,style='') => `<div class="bar" style="${style}"><i></i><i></i><i></i><span>${escape(label)}</span></div>`;
 const orange = 'var(--accent)';
-const gray = 'color:#626060';
+const gray = 'color:var(--muted)';
 function grid(x,y,cols,total,filled,size,step,tone='var(--ink)', gap=5) {
   const cells = Array.from({length:total},(_,i) => {
     const fraction = Math.max(0,Math.min(1,filled-i));
     const fill = fraction > 0 && fraction < 1
-      ? `background:linear-gradient(90deg,${tone} ${fraction*100}%,var(--panel) ${fraction*100}%)` : '';
+      ? `background:linear-gradient(90deg,${tone} ${fraction*100}%,var(--surface) ${fraction*100}%)` : '';
     return `<span class="cell${fraction ? '' : ' empty'}" style="--i:${i};${fill}"></span>`;
   }).join('');
   return place('grid',x,y,step,cells,`--cols:${cols};--size:${size}px;--tone:${tone};--gap:${gap}px`);
@@ -92,7 +105,7 @@ function pixelStrip(step, lineInset = 0) {
   const cell = (column,row,tone,offset = 0) => `<span class="cell" style="--i:${column};--tone:${tone};left:${column*(1582/75)}px;top:${row*21+offset}px;width:18px;height:18px"></span>`;
   let column = 0;
   const line = runs.map(([length,level]) => Array.from({length},() => cell(column++,5-level,orange,lineInset)).join('')).join('');
-  const columns = bars.map((height,index) => Array.from({length:height},(_,row) => cell(index,12-row,row === height-1 && index%5===1 ? '#666' : '#000')).join('')).join('');
+  const columns = bars.map((height,index) => Array.from({length:height},(_,row) => cell(index,12-row,row === height-1 && index%5===1 ? 'var(--muted)' : 'var(--ink)')).join('')).join('');
   return place('pixel-strip',0,630,step,line+columns,'width:1600px;height:270px');
 }
 const dots = () => place('dotfield',3,0,0,'','width:1597px;height:636px;border-radius:18px 18px 0 0');
@@ -111,10 +124,15 @@ slide('Pilot results',
   grid(76,350,10,10,8,60,2,orange,8),
   copy(76,470,'One cell represents one pilot team.',2));
 
+if (!slides.length) {
+  slide('Presentation', title(70,260,100,'Your {story} here',1));
+}
 
 // Build state is independent of layout. Advancing one step can reveal multiple elements.
 stage.innerHTML = slides.join('');
 const scenes = Array.from(stage.children);
+stage.append(document.querySelector('#deck-brand').content.cloneNode(true));
+const manualReveal = document.documentElement.dataset.reveal === 'manual';
 const builds = scenes.map(scene => Array.from(scene.querySelectorAll('[data-build]')));
 const lastBuild = builds.map(parts => Math.max(...parts.map(part => Number(part.dataset.build))));
 const position = document.querySelector('#position');
@@ -136,8 +154,8 @@ function render(animate = false) {
     part.setAttribute('aria-hidden', String(step > build));
   }
   position.value = `${page+1}/${scenes.length} · ${build}/${lastBuild[page]}`;
-  previous.disabled = page === 0;
-  next.disabled = page === scenes.length-1;
+  previous.disabled = page === 0 && (!manualReveal || build === 0);
+  next.disabled = page === scenes.length-1 && (!manualReveal || build === lastBuild[page]);
   history.replaceState(null,'',`#${page+1}.${build}`);
 }
 function scheduleReveal(delay) {
@@ -153,11 +171,21 @@ function showSlide(target, initialBuild = 0) {
   page = target;
   build = initialBuild;
   render();
-  scheduleReveal(firstRevealDelay);
+  if (!manualReveal) scheduleReveal(firstRevealDelay);
 }
-function move(direction) {
+function move(direction, pageOnly = false) {
+  if (manualReveal && !pageOnly) {
+    const targetBuild = build+direction;
+    if (targetBuild >= 0 && targetBuild <= lastBuild[page]) {
+      build = targetBuild;
+      render(direction > 0);
+      return;
+    }
+  }
   const target = page+direction;
-  if (target >= 0 && target < scenes.length) showSlide(target);
+  if (target < 0 || target >= scenes.length) return;
+  const initialBuild = manualReveal && !pageOnly && direction < 0 ? lastBuild[target] : 0;
+  showSlide(target, initialBuild);
 }
 function loadPosition() {
   const match = /^#(\d+)(?:\.(\d+))?$/.exec(location.hash);
@@ -188,8 +216,8 @@ window.addEventListener('keydown',event => {
   switch (event.key) {
     case 'ArrowRight': case 'ArrowDown': case ' ': move(1); break;
     case 'ArrowLeft': case 'ArrowUp': move(-1); break;
-    case 'PageDown': move(1); break;
-    case 'PageUp': move(-1); break;
+    case 'PageDown': move(1,true); break;
+    case 'PageUp': move(-1,true); break;
     case 'Home': showSlide(0); break;
     case 'End': showSlide(scenes.length-1); break;
     case 'f': case 'F': enterFullscreen(); break;
