@@ -25,4 +25,4 @@ slide('Pilot results',
   copy(76,470,'One cell represents one pilot team.',2));
 ```
 
-The first reveal begins after 360 ms and subsequent steps follow at 760 ms intervals. Advance with Right, Space, Page Down, or a click. Previous page starts the sequence again. In full-screen mode, navigation remains available through the keyboard or a click on the slide.
+In automatic mode, the first reveal begins after 360 ms and subsequent steps follow at 760 ms intervals. In manual mode, Right, Space, and clicks reveal one build at a time and advance after the last build. Left reverses a build or returns to the previous page's final state. Page Up and Page Down turn the whole page in either mode. Keep the logo placement area clear if the deck is branded.
