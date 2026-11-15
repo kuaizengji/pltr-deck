@@ -4,11 +4,13 @@ Palantir-inspired animated HTML slides. By default, each slide reveals its conte
 
 An independent open-source project inspired by Palantir’s presentation style. Not affiliated with or endorsed by Palantir Technologies.
 
-## Original reference deck
+## Palantir Q3 2026 reference deck
 
-[![Six fullscreen-style previews from the original reference deck](examples/palantir-preview.webp)](examples/palantir-original.html)
+[![Six slides from the HTML reconstruction](examples/palantir-preview.webp)](examples/palantir-original.html)
 
-[Download the original 31-slide HTML deck](https://raw.githubusercontent.com/kuaizengji/pltr-deck/main/examples/palantir-original.html) and open it in a browser. This deck is a visual reference. New decks start from [the reusable template](assets/deck.html).
+[Download the 31-slide HTML reconstruction](https://raw.githubusercontent.com/kuaizengji/pltr-deck/main/examples/palantir-original.html) and open it in a browser. The HTML example recreates the on-screen graphics in David Carbutt’s [*Palantir’s CEO Just Said the UNTHINKABLE!*](https://www.youtube.com/watch?v=ofmTLI86w6Y), which excerpts Palantir’s Q3 2026 earnings call held on November 2, 2026.
+
+Palantir Investor Relations lists the [official earnings webcast](https://www.youtube.com/watch?v=LUjkWDaubhg) and a separate [official Business Update presentation](https://investors.palantir.com/files/Palantir%20-%20Q3%202026%20Business%20Update.pdf) on its [Q3 2026 event listing](https://investors.palantir.com/events/1000). New decks start from [the reusable template](assets/deck.html).
 
 ## Try it
 
