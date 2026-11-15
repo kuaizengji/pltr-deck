@@ -24,10 +24,10 @@ Follow [SKILL.md](SKILL.md) with a brief or speaker notes, or copy [the template
 
 | Role | Default | Used for |
 | --- | --- | --- |
-| Canvas (`--paper`) | `#fdfdfd` | Slide background and light text on dark UI |
-| Foreground (`--ink`) | `#0b0b0b` | Headings, dark capsules, window headers, and primary grid cells |
-| Accent (`--accent`) | `#ff4800` | Keyword highlights and emphasized data marks |
-| Surface (`--surface`) | `#e0e5ef` | Cool blue-gray panels, secondary grid cells, and tonal backgrounds |
+| Canvas (`--paper`) | <img src="assets/swatches/canvas.svg" alt="" width="18" height="18"> `#fdfdfd` | Slide background and light text on dark UI |
+| Foreground (`--ink`) | <img src="assets/swatches/foreground.svg" alt="" width="18" height="18"> `#0b0b0b` | Headings, dark capsules, window headers, and primary grid cells |
+| Accent (`--accent`) | <img src="assets/swatches/accent.svg" alt="" width="18" height="18"> `#ff4800` | Keyword highlights and emphasized data marks |
+| Surface (`--surface`) | <img src="assets/swatches/surface.svg" alt="" width="18" height="18"> `#e0e5ef` | Cool blue-gray panels, secondary grid cells, and tonal backgrounds |
 
 Edit the four CSS variables in `:root`. Check contrast for text on the canvas, on the accent, and inside dark capsules and light panels.
 
